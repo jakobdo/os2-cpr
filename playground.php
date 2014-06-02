@@ -1,14 +1,25 @@
-function valid_date($cpr){
-  if (preg_match('/(\d{2})(\d{2})(\d{2})-?(\d{1})(\d{2})(\d{1})/', $cpr, $match)) {
-    $day        = $match[1];
-    $month      = $match[2];
-    $year       = $match[3];
-    $year_check = $match[4];
-    $serial     = $match[5];
-    $control    = $match[6];
-    
-    $prefix_year = '';
-	  switch($year_check){
+<?php
+
+class CPR{
+  private $cpr        = NULL;
+  private $day        = NULL;
+  private $month      = NULL;
+  private $year       = NULL;
+  private $year_check = NULL;
+  private $serial     = NULL;
+  private $control    = NULL;
+  
+  public function __construct($cpr){
+    if (preg_match('/^(\d{2})(\d{2})(\d{2})-?(\d{1})(\d{2})(\d{1})$/', $cpr, $matches)) {
+      list($skip, $this->day, $this->month, $this->year, $this->year_check, $this->serial, $this->control) = $matches;
+      $this->cpr = implode('', array_slice($matches, 1, 6));
+    }else{
+      throw new Exception("Invalid CPR, 1234567890 or 123456-7890 accepted");
+    }
+  }
+  
+  public function valid_date(){
+    switch($this->year_check){
 	    case 0:
 	    case 1:
 	    case 2:
@@ -18,7 +29,7 @@ function valid_date($cpr){
 	      break;
 	    case 4:
 	      //2000-2036 eller 1937-1999
-	      if($year > 36)
+	      if($this->year > 36)
 	        $prefix_year = 19;
 	      else
 	        $prefix_year = 20;
@@ -28,14 +39,14 @@ function valid_date($cpr){
 	    case 7:
 	    case 8:
 	      //2000-2057, 1858-1899
-	      if($year > 57)
+	      if($this->year > 57)
 	        $prefix_year = 18;
 	      else
 	        $prefix_year = 20;
 	      break;
 	    case 9:
 	      //2000-2036, 1937-1999
-	      if($year > 37)
+	      if($this->year > 37)
 	        $prefix_year = 19;
 	      else
 	        $prefix_year = 20;
@@ -43,22 +54,31 @@ function valid_date($cpr){
 	    default:
 	      return false;
 	  }
-	  $year = sprintf("%d%d", $prefix_year, $year);
-	  return checkdate($month, $day, $year);
-  } else {
-	  return false;
+	  $this->year = sprintf("%d%d", $prefix_year, $this->year);
+	  return checkdate($this->month, $this->day, $this->year);
+  }
+  
+  public function modulus11(){
+    $factor = '4327654321';
+    $number_arr = str_split($this->cpr);
+    $factor_arr = str_split($factor);
+    $sum = 0;
+    for ($i = 0; $i < count($factor_arr); $i++) {
+      $sum += $number_arr[$i] * $factor_arr[$i];
+    }
+    return (($sum % 11) == 0) ? true : false;
   }
 }
 
-function modulus11($cpr){
-  $number = str_replace('-', '', $cpr);
-  $factor = '4327654321';
-  $number_arr = str_split($number);
-  $factor_arr = str_split($factor);
-  $sum = 0;
-  for ($i = 0; $i < count($factor_arr); $i++) {
-    $sum += $number_arr[$i] * $factor_arr[$i];
+if (basename($argv[0]) == basename(__FILE__)){
+  echo '<pre>';
+  try {
+    $cpr = isset($_GET['cpr']) ? $_GET['cpr'] : '';
+    $c = new CPR($cpr);
+    var_dump($c->valid_date());
+    var_dump($c->modulus11());
+  } catch (Exception $e) {
+    printf("Exception: %s", $e->getMessage());
   }
-  $check = $sum % 11;
-  return ($check == 0) ? true : false;
+  echo '</pre>';
 }
