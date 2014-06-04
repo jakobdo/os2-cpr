@@ -10,7 +10,7 @@ class CPR{
   private $control    = NULL;
   
   public function __construct($cpr){
-    if (preg_match('/^(\d{2})(\d{2})(\d{2})-?(\d{1})(\d{2})(\d{1})$/', $cpr, $matches)) {
+    if (preg_match('/^(0[1-9]|[12][0-9]|3[01])(0[1-9]|1[012])([\d]{2})[\s-]?(\d{1})(\d{2})(\d{1})$/', $cpr, $matches)) {
       list($skip, $this->day, $this->month, $this->year, $this->year_check, $this->serial, $this->control) = $matches;
       $this->cpr = implode('', array_slice($matches, 1, 6));
     }else{
